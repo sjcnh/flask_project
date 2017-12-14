@@ -1,6 +1,6 @@
 #encoding: utf-8
 
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, g
 import config
 from models import User, Question, Answer
 from exts import db
@@ -79,8 +79,8 @@ def question():
         title = request.form.get('title')
         content = request.form.get('content')
         question = Question(title = title, content = content)
-        user_id = session.get('user_id')
-        user = User.query.filter(User.id == user_id).first()
+        # user_id = session.get('user_id')
+        # user = User.query.filter(User.id == user_id).first()
         question.author = user
         db.session.add(question)
         db.session.commit()
@@ -103,10 +103,10 @@ def add_comment():
     comment = request.form.get('answer_comment')
     question_id = request.form.get('question_id')
     answer = Answer(content = comment) # 前者为模型数据库中的名称！
-    user_id = session['user_id'] # 如果当前没有登录，则会报错！所以需要添加login_required装饰器！
-    user = User.query.filter(User.id == user_id).first()
+    # user_id = session['user_id'] # 如果当前没有登录，则会报错！所以需要添加login_required装饰器！
+    # user = User.query.filter(User.id == user_id).first()
     question = Question.query.filter(Question.id == question_id).first()
-    answer.author = user
+    answer.author = g.user
     answer.question = question
     # 把评论/回答提交！
     db.session.add(answer)
@@ -128,14 +128,24 @@ def search():
 
     return render_template('index.html', questions = questions)
 
-
-@app.context_processor
-def my_context_processor():
+@app.before_request
+def my_before_request():
     user_id = session.get('user_id')
     if user_id:
         user = User.query.filter(User.id == user_id).first()
         if user:
-            return {'user': user}
+            g.user = user
+
+
+@app.context_processor
+def my_context_processor():
+    # user_id = session.get('user_id')
+    # if user_id:
+    #     user = User.query.filter(User.id == user_id).first()
+    #     if user:
+    #         return {'user': user}
+    if hasattr(g, 'user'):
+        return {'user': g.user}
     return {}
 
 

@@ -3,12 +3,22 @@
 #专门用来写模型
 from exts import db
 from datetime import datetime
+from werkzeug.security import generate_password_hash
+
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key= True, autoincrement= True)
     telephone = db.Column(db.String(11), nullable= False)
     username = db.Column(db.String(50), nullable= False)
     pwd = db.Column(db.String(100), nullable= False)
+
+    def __init__(self, *args, **kwargs):
+        telephone = kwargs.get('telephone')
+        username = kwargs.get('username')
+        password = kwargs.get('pwd') #这个是从syqa User 获取的
+        self.telephone = telephone
+        self.username = username
+        self.pwd = generate_password_hash(password)
 
 class Question(db.Model):
     __tablename__ = 'question'
@@ -29,6 +39,7 @@ class Answer(db.Model):
     question_id = db.Column(db.Integer, db.ForeignKey('question.id'))
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     create_time = db.Column(db.DateTime, default=datetime.now)
+
 
     # 模型中不能使用syqa中的-create_time方式进行倒叙，只能采用 .desc()方法！
     # eg： question = db.relationship('Question', backref = db.backref('answers', order_by = id.desc()))
